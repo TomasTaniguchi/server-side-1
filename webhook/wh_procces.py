@@ -4,15 +4,17 @@ from webhook.functions_wh import get_node3, create_tickets, update_ticket, send_
 from webhook.functions_api_w import sent_payload
 from webhook.get_from_db import get_id_name_entity, get_ticket
 import sys, traceback
+from functools import lru_cache
+
+session = base.db_session()
+
+
 
 traceback_template = '''Traceback (most recent call last):
   File "%(filename)s", line %(lineno)s, in %(id_name)s
 %(type)s: %(message)s\n''' # Skipping the "actual line" item
 
 def message_sent(payload):
-    print(payload)
-    session = base.db_session()
-    print("message_received ")
     message = payload['message']
     messages = ModelMessages(**message)
     session.add(messages)
@@ -20,9 +22,7 @@ def message_sent(payload):
 
 
 def message_received(payload):
-    session = base.db_session()
     print("message_received")
-    print(payload)
     message = payload['message']
     phone_id = str(payload['phone_id'])
     id_message = message['id']
@@ -35,6 +35,7 @@ def message_received(payload):
     messages = ModelMessages(**message)
     session.add(messages)
     session.commit()
+
     return
 
 
@@ -43,7 +44,6 @@ def act(payload):
     pass
 
 def build_tickets(**kwargs):
-    print(kwargs)
     payload = kwargs.get('payload')
     node2 = kwargs.get('node2')
     session = kwargs.get('session')
@@ -152,7 +152,6 @@ def build_tickets(**kwargs):
                 check_response(response)
                 send_df_area(session, phone_id, phone_destination, node2, node3)
 
-        session.commit()
 
     except:
         exc_type, exc_value, exc_traceback = sys.exc_info()  # most recent (if any) by default
@@ -162,7 +161,7 @@ def build_tickets(**kwargs):
             'lineno': exc_traceback.tb_lineno,
             'id_name': exc_traceback.tb_frame.f_code.co_name,
             'type': exc_type.__name__,
-            'message' : str(exc_value),  # or see traceback._some_str()
+            'message': str(exc_value),  # or see traceback._some_str()
         }
 
         del (exc_type, exc_value, exc_traceback)
@@ -172,7 +171,6 @@ def build_tickets(**kwargs):
 
 
     finally:
-        session.close()
         return payload_tk['id']
 
 

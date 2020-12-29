@@ -10,7 +10,7 @@ API_TOKEN = variables.API_TOKEN
 
 
 def setup_webhook():
-    if PRODUCT_ID == ""  or API_TOKEN == "":
+    if PRODUCT_ID == "" or API_TOKEN == "":
         print(
             "You need to change PRODUCT_ID and API_TOKEN values in app.py file.", file=sys.stdout, flush=True
         )

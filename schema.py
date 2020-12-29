@@ -12,9 +12,6 @@ from schema_all import schema_account, schema_entity, \
 import graphene
 import logging
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s-%(process)d-%(levelname)s-%(message)s-%(thread)d')
-logging.debug(msg="start")
 
 
 class Query(graphene.ObjectType):
