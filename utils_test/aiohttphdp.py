@@ -1,4 +1,4 @@
-from aiohttp import web
+import web
 
 async def handle(request):
     name = request.match_info.get('id_name', "Anonymous")
