@@ -1,6 +1,6 @@
 import asyncio
 import time
-import aiohttp
+import aiohttphdp
 
 
 async def download_site(session, url):
@@ -9,7 +9,7 @@ async def download_site(session, url):
 
 
 async def download_all_sites(sites):
-    async with aiohttp.ClientSession() as session:
+    async with aiohttphdp.ClientSession() as session:
         tasks = []
         for url in sites:
             task = asyncio.ensure_future(download_site(session, url))

@@ -6,7 +6,7 @@ from webhook import wh_procces
 optimal_thread_count = multiprocessing.cpu_count() + 1
 poo_scheduler = ThreadPoolScheduler(optimal_thread_count)
 
-
+print(optimal_thread_count)
 async def webhook(request):
     payload = await request.json()
 

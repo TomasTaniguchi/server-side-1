@@ -20,36 +20,31 @@ def send_message_df(session, code_id_value, phone_destination, id_name_entity):
     sent_msg_df_list = session.query(ModelCode.sent_area).filter_by(phone_id=code_id_value).first()
     sent_list = sent_msg_df_list.sent_area
     if sent_list:
+        pass
         send_msg_areas_df(session, code_id_value, phone_destination, id_name_entity)
     else:
         send_only_msg_df(session, code_id_value, phone_destination)
-
+        pass
 
 def send_msg_areas_df(session, phone_id, phone_destination, id_name_entity):
     areas = get_list_area_name(session, id_name_entity)[0]
     print("2 phone_id: ", phone_id)
     default_msg = get_default_msg(session, phone_id)
     message = default_msg + "\n" + areas
-    response = sent_message(phone_id, phone_destination, message)
-    check_response(response)
+    sent_message(phone_id, phone_destination, message)
 
 
 def send_only_msg_df(session, phone_id, phone_destination):
     print("1 phone_id: ", phone_id)
     default_msg = get_default_msg(session, phone_id)
-    response = sent_message(phone_id, phone_destination, default_msg)
-    check_response(response)
+    sent_message(phone_id, phone_destination, default_msg)
 
 
 def send_df_area(session, phone_id, phone_destination, id_name_entity, area):
     default_msg = get_default_msg_area(session, id_name_entity, area)
     print("3 phone_id: ", phone_id)
-    response = sent_message(phone_id, phone_destination, default_msg)
-    check_response(response)
+    sent_message(phone_id, phone_destination, default_msg)
 
-
-def check_response(response):
-    print(response)
 
 
 def create_tickets(session, body):

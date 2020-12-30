@@ -86,9 +86,11 @@ def build_tickets(**kwargs):
             check_response(response)
 
             if node3:
-                send_df_area(session, phone_id, phone_destination, node2, node3)
+                pass
+                #send_df_area(session, phone_id, phone_destination, node2, node3)
             else:
-                send_message_df(session, phone_id, phone_destination, node2)
+                pass
+                #send_message_df(session, phone_id, phone_destination, node2)
 
         else:
             node3_exist = False
