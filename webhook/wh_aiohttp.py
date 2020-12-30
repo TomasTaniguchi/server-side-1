@@ -23,10 +23,10 @@ def messenger(payload):
     source = Observable.of(payload).map(lambda i: (i['message']['fromMe'] == True))
 
     source.take_while(lambda i: i == True) \
-        .map(lambda i: wh_procces.message_sent(payload)).subscribe_on(poo_scheduler).subscribe()
+        .map(lambda i: wh_procces.message_sent(payload)).subscribe()
 
     source.take_while(lambda i: i == False) \
-        .map(lambda i: wh_procces.message_received(payload)).subscribe_on(poo_scheduler).subscribe()
+        .map(lambda i: wh_procces.message_received(payload)).subscribe()
 
 
 app = web.Application()

@@ -1,6 +1,6 @@
 from database.model_code import ModelCode
 from database.model_tickets import ModelTickets
-from webhook.get_from_db import get_list_area_name, get_default_msg, get_default_msg_area
+from webhook.get_from_db import get_list_area_name, get_default_msg, get_default_msg_area, get_sent_list_area
 from webhook.functions_api_w import sent_message
 
 
@@ -16,16 +16,17 @@ def check_area(session, chain, id_name_entity):
         return False
 
 
-def send_message_df(session, code_id_value, phone_destination, id_name_entity):
-    sent_msg_df_list = session.query(ModelCode.sent_area).filter_by(phone_id=code_id_value).first()
-    sent_list = sent_msg_df_list.sent_area
+def send_message_df(session, id_phone, phone_destination, id_name_entity):
+
+    sent_list = get_list_area_name(session,id_phone)
     if sent_list:
-        send_msg_areas_df(session, code_id_value, phone_destination, id_name_entity)
+        send_msg_areas_df(session, id_phone, phone_destination, id_name_entity)
     else:
-        send_only_msg_df(session, code_id_value, phone_destination)
+        send_only_msg_df(session, id_phone, phone_destination)
 
 
 def send_msg_areas_df(session, phone_id, phone_destination, id_name_entity):
+
     areas = get_list_area_name(session, id_name_entity)[0]
     print("2 phone_id: ", phone_id)
     default_msg = get_default_msg(session, phone_id)
@@ -35,6 +36,7 @@ def send_msg_areas_df(session, phone_id, phone_destination, id_name_entity):
 
 
 def send_only_msg_df(session, phone_id, phone_destination):
+
     print("1 phone_id: ", phone_id)
     default_msg = get_default_msg(session, phone_id)
     response = sent_message(phone_id, phone_destination, default_msg)
@@ -42,6 +44,7 @@ def send_only_msg_df(session, phone_id, phone_destination):
 
 
 def send_df_area(session, phone_id, phone_destination, id_name_entity, area):
+
     default_msg = get_default_msg_area(session, id_name_entity, area)
     print("3 phone_id: ", phone_id)
     response = sent_message(phone_id, phone_destination, default_msg)
@@ -49,10 +52,12 @@ def send_df_area(session, phone_id, phone_destination, id_name_entity, area):
 
 
 def check_response(response):
+
     print(response)
 
 
 def create_tickets(session, body):
+
     last_id_msg = body['message']['id']
     product_id_value = body['product_id']
     user = body['user']
@@ -69,6 +74,7 @@ def create_tickets(session, body):
 
 
 def get_node3(session, body, id_name_entity):
+
     node3 = False
     if body['message']['type'] == 'text':
         chain = body['message']['text']
