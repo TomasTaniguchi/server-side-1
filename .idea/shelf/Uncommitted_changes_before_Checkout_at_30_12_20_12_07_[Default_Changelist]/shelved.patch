@@ -1,0 +1,161 @@
+Index: webhook/wh_aiohttp.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from aiohttp import web\nimport multiprocessing\nfrom rx import Observable\nfrom rx.concurrency import ThreadPoolScheduler\nfrom webhook import wh_procces\noptimal_thread_count = multiprocessing.cpu_count() + 1\npoo_scheduler = ThreadPoolScheduler(optimal_thread_count)\n\nprint(optimal_thread_count)\nasync def webhook(request):\n    payload = await request.json()\n\n    Observable.of(payload).map(lambda i: (i['type'])).take_while(lambda i: i == \"ack\") \\\n        .map(lambda i: wh_procces.act(payload)).subscribe_on(poo_scheduler).subscribe()\n\n    Observable.of(payload).map(lambda i: (i['type'])).take_while(lambda i: i == \"message\") \\\n        .map(lambda i: messenger(payload)).subscribe_on(poo_scheduler).subscribe()\n\n    return web.Response()\n\n\ndef messenger(payload):\n    source = Observable.of(payload).map(lambda i: (i['message']['fromMe'] == True))\n\n    source.take_while(lambda i: i == True) \\\n        .map(lambda i: wh_procces.message_sent(payload)).subscribe_on(poo_scheduler).subscribe()\n\n    source.take_while(lambda i: i == False) \\\n        .map(lambda i: wh_procces.message_received(payload)).subscribe_on(poo_scheduler).subscribe()\n\n\napp = web.Application()\napp.add_routes([web.post('/webhook', webhook)])\n\nweb.run_app(app, port=8000)
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/webhook/wh_aiohttp.py b/webhook/wh_aiohttp.py
+--- a/webhook/wh_aiohttp.py	(revision ed87c992d92234e271475a0e0c0148a1ad7c668e)
++++ b/webhook/wh_aiohttp.py	(date 1609333660555)
+@@ -23,10 +23,10 @@
+     source = Observable.of(payload).map(lambda i: (i['message']['fromMe'] == True))
+ 
+     source.take_while(lambda i: i == True) \
+-        .map(lambda i: wh_procces.message_sent(payload)).subscribe_on(poo_scheduler).subscribe()
++        .map(lambda i: wh_procces.message_sent(payload)).subscribe()
+ 
+     source.take_while(lambda i: i == False) \
+-        .map(lambda i: wh_procces.message_received(payload)).subscribe_on(poo_scheduler).subscribe()
++        .map(lambda i: wh_procces.message_received(payload)).subscribe()
+ 
+ 
+ app = web.Application()
+Index: webhook/wh_procces.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from database import base\nfrom database.model_messages import ModelMessages\nfrom webhook.functions_wh import get_node3, create_tickets, update_ticket, send_df_area, send_message_df\nfrom webhook.functions_api_w import sent_payload\nfrom webhook.get_from_db import get_id_name_entity, get_ticket\nimport sys, traceback\nfrom functools import lru_cache\n\nsession = base.db_session()\n\n\n\ntraceback_template = '''Traceback (most recent call last):\n  File \"%(filename)s\", line %(lineno)s, in %(id_name)s\n%(type)s: %(message)s\\n''' # Skipping the \"actual line\" item\n\ndef message_sent(payload):\n    message = payload['message']\n    messages = ModelMessages(**message)\n    session.add(messages)\n    return\n\n\ndef message_received(payload):\n    print(\"message_received\")\n    message = payload['message']\n    phone_id = str(payload['phone_id'])\n    id_message = message['id']\n    node2 = get_id_name_entity(session, phone_id)\n    user = payload['user']\n    id_user = user['id']\n    exists = get_ticket(session, id_user, node2)\n    tickets_id = build_tickets(session=session, id_message=id_message, payload=payload, exists=exists, node2=node2, phone_id=phone_id)\n    message['tickets_id'] = tickets_id\n    messages = ModelMessages(**message)\n    session.add(messages)\n    session.commit()\n\n    return\n\n\ndef act(payload):\n    #print(payload)\n    pass\n\ndef build_tickets(**kwargs):\n    payload = kwargs.get('payload')\n    node2 = kwargs.get('node2')\n    session = kwargs.get('session')\n    phone_id = kwargs.get('phone_id')\n    payload['phone_id'] = phone_id\n    exists = kwargs.get('exists')\n    id_message = kwargs.get('id_message')\n    try:\n        user = payload['user']\n        id_user = user['id']\n        name = user['name']\n        image = user['image']\n        timestamp = int(payload['timestamp'])\n        phone_destination = user['phone']\n        last_id_msg = payload['message']['id']\n        phone_num = user['phone']\n        node3 = get_node3(session, payload, node2)\n\n        tk = False\n        for tk in exists:\n            tk = tk.id\n            break\n\n        payload_tk = {'id_tk': id_user, 'phone_id': phone_id, 'phone': phone_num, \\\n                      'node2': node2, 'node3': \"\", 'node4': \"\", \\\n                      'timestamp': timestamp, 'last_id_msg': last_id_msg, 'id_name': name, 'image': image}\n\n        if not tk:\n            if node3:\n                payload['user']['node3'] = node3\n                payload_tk['node3'] = node3\n\n            payload['user']['node2'] = node2\n\n            new_tk = create_tickets(session, payload)\n            session = new_tk[0]\n            id = new_tk[1]\n            payload_tk['id'] = id\n            response = sent_payload(payload_tk)\n            check_response(response)\n\n            if node3:\n                pass\n                #send_df_area(session, phone_id, phone_destination, node2, node3)\n            else:\n                pass\n                #send_message_df(session, phone_id, phone_destination, node2)\n\n        else:\n            node3_exist = False\n            create_new_tk = True\n            for tk in exists:\n                if tk.node3 != \"\":\n                    node3_exist = True\n                if node3 and node3 == tk.node3:\n                    #if node3 == tk.node3:\n                    create_new_tk = False\n            if node3_exist:\n                for tk in exists:\n                    if not node3 and tk.current:\n                        tk.timestamp = timestamp\n                        tk.last_id_msg = last_id_msg\n                        session = update_ticket(session, tk)\n                        id = tk.id\n                        db_node3 = tk.node3\n                        payload_tk['id'] = id\n                        payload_tk['node3'] = db_node3\n                        response = sent_payload(payload_tk)\n                        check_response(response)\n                        break\n\n                    if node3 == tk.node3:\n                        session = set_current_false(session, exists)\n                        tk.timestamp = timestamp\n                        tk.last_id_msg = last_id_msg\n                        tk.current = 1\n                        session = update_ticket(session, tk)\n                        id = tk.id\n                        payload_tk['id'] = id\n                        payload_tk['node3'] = node3\n                        response = sent_payload(payload_tk)\n                        check_response(response)\n                        send_df_area(session, phone_id, phone_destination, node2, node3)\n                        break\n\n            if not node3_exist:\n                for tk in exists:\n                    if not node3:\n                        if tk.current:\n                            session = update_ticket(session, tk)\n                            id = tk.id\n                            payload_tk['id'] = id\n                            response = sent_payload(payload_tk)\n                            check_response(response)\n                            send_message_df(session, phone_id, phone_destination, node2)\n                            break\n\n            if create_new_tk and node3:\n                payload['user']['node2'] = node2\n                payload['user']['node3'] = node3\n                session = set_current_false(session, exists)\n                new_tk = create_tickets(session, payload)\n                session = new_tk[0]\n                id = new_tk[1]\n                payload_tk['id'] = id\n                payload_tk['node3'] = node3\n                response = sent_payload(payload_tk)\n                check_response(response)\n                send_df_area(session, phone_id, phone_destination, node2, node3)\n\n\n    except:\n        exc_type, exc_value, exc_traceback = sys.exc_info()  # most recent (if any) by default\n\n        traceback_details = {\n            'filename': exc_traceback.tb_frame.f_code.co_filename,\n            'lineno': exc_traceback.tb_lineno,\n            'id_name': exc_traceback.tb_frame.f_code.co_name,\n            'type': exc_type.__name__,\n            'message': str(exc_value),  # or see traceback._some_str()\n        }\n\n        del (exc_type, exc_value, exc_traceback)\n\n        print(traceback.format_exc())\n        print(traceback_template % traceback_details)\n\n\n    finally:\n        return payload_tk['id']\n\n\ndef set_current_false(session, tks):\n    for tk in tks:\n        tk.current = 0\n        session.merge(tk)\n    return session\n\n\n\ndef check_response(response):\n    print(response)
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/webhook/wh_procces.py b/webhook/wh_procces.py
+--- a/webhook/wh_procces.py	(revision ed87c992d92234e271475a0e0c0148a1ad7c668e)
++++ b/webhook/wh_procces.py	(date 1609337301856)
+@@ -35,7 +35,6 @@
+     messages = ModelMessages(**message)
+     session.add(messages)
+     session.commit()
+-
+     return
+ 
+ 
+@@ -183,6 +182,5 @@
+     return session
+ 
+ 
+-
+ def check_response(response):
+     print(response)
+\ No newline at end of file
+Index: api_maytapi/variables.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>INSTANCE_URL = \"https://api.maytapi.com/api\"\nPRODUCT_ID = \"55efec08-be5e-4045-b538-4079c9d968de\"\nAPI_TOKEN = \"96f5cb53-c274-4588-8c30-bd6bc9b9ce71\"
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/api_maytapi/variables.py b/api_maytapi/variables.py
+--- a/api_maytapi/variables.py	(revision ed87c992d92234e271475a0e0c0148a1ad7c668e)
++++ b/api_maytapi/variables.py	(date 1609339846855)
+@@ -1,3 +1,14 @@
++from database import base
++from database.model_env_variables import ModelEnvVariables
++
++session = base.db_session()
++
++
++def get_env_variables(session, ID):
++    print("get_id_name_entity", session, ID)
++    get_entity = session.query(ModelEnvVariables).filter_by(ID=phone_id).first()
++    return get_entity.id_name_entity
++
+ INSTANCE_URL = "https://api.maytapi.com/api"
+ PRODUCT_ID = "55efec08-be5e-4045-b538-4079c9d968de"
+ API_TOKEN = "96f5cb53-c274-4588-8c30-bd6bc9b9ce71"
+\ No newline at end of file
+Index: class_api/data_subcription_tk.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from datetime import datetime\nimport time\n\n\n\nclass PayloadSubTk():\n    payload_tickets = []\n    def timestamp_to_date(timestamp):\n        date = datetime.fromtimestamp(timestamp)\n        return date\n\n    def received_data(id, data):\n        payload = PayloadSubTk.payload_tickets\n        count_payload_tk = len(payload)\n        if count_payload_tk != 0:\n            for i in range(count_payload_tk):\n                a = (payload[i]['id'] == id)\n                data_time = PayloadSubTk.timestamp_to_date(payload[i]['timestamp'])\n                current_time = PayloadSubTk.timestamp_to_date(round(time.time()))\n                if a:\n                    payload.pop(i)\n                    break\n            payload.append(data)\n        else:\n            payload.append(data)\n        PayloadSubTk.payload_tickets = payload\n        print(PayloadSubTk.payload_tickets)\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/class_api/data_subcription_tk.py b/class_api/data_subcription_tk.py
+--- a/class_api/data_subcription_tk.py	(revision ed87c992d92234e271475a0e0c0148a1ad7c668e)
++++ b/class_api/data_subcription_tk.py	(date 1609336837416)
+@@ -5,6 +5,7 @@
+ 
+ class PayloadSubTk():
+     payload_tickets = []
++
+     def timestamp_to_date(timestamp):
+         date = datetime.fromtimestamp(timestamp)
+         return date
+Index: utils_test/rx_test.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from rx import Observable\nimport json\n\npayload_tickets = {'id_tk': '5493764921348@c.us', 'phone_id': 3387, 'node2': '@Cyffffberlink', 'node3': '#servicio', 'node4': '',\n     'timestamp': 1594311359}\n\n\n\n\npayload_tickets= [{'hola': 44, 'como': 444, 'estas': 1128.15657311}, {'hola': 22, 'como': 222, 'estas': 1111}]\n\nfor i in range(len(payload_tickets)):\n    a = (payload_tickets[i]['hola'] == 22)\n    if a:\n        print(i)\n        payload_tickets.pop(i)\n        break\n\nprint(payload_tickets)\n\ndef tickets():\n    return Observable.from_(payload_tickets).filter(lambda i: i['estas']==00)\n\n.\\\nmap(lambda i : print(i)).subscribe()\n\n\n\ninput(\"\")
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/utils_test/rx_test.py b/utils_test/rx_test.py
+--- a/utils_test/rx_test.py	(revision ed87c992d92234e271475a0e0c0148a1ad7c668e)
++++ b/utils_test/rx_test.py	(date 1609339846859)
+@@ -4,11 +4,9 @@
+ payload_tickets = {'id_tk': '5493764921348@c.us', 'phone_id': 3387, 'node2': '@Cyffffberlink', 'node3': '#servicio', 'node4': '',
+      'timestamp': 1594311359}
+ 
+-
+-
+-
+ payload_tickets= [{'hola': 44, 'como': 444, 'estas': 1128.15657311}, {'hola': 22, 'como': 222, 'estas': 1111}]
+ 
++
+ for i in range(len(payload_tickets)):
+     a = (payload_tickets[i]['hola'] == 22)
+     if a:
+@@ -21,7 +19,8 @@
+ def tickets():
+     return Observable.from_(payload_tickets).filter(lambda i: i['estas']==00)
+ 
+-.\
++
++
+ map(lambda i : print(i)).subscribe()
+ 
+ 
+Index: utils_test/aiohttphdp.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import asyncio\n\nasync def count():\n    print(\"One\")\n    await asyncio.sleep(1)\n    print(\"Two\")\n\nasync def main():\n    await asyncio.gather(count(), count(), count())\n\nif __name__ == \"__main__\":\n    import time\n    s = time.perf_counter()\n    asyncio.run(main())\n    elapsed = time.perf_counter() - s\n    print(f\"{__file__} executed in {elapsed:0.2f} seconds.\")
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/utils_test/aiohttphdp.py b/utils_test/aiohttphdp.py
+--- a/utils_test/aiohttphdp.py	(revision ed87c992d92234e271475a0e0c0148a1ad7c668e)
++++ b/utils_test/aiohttphdp.py	(date 1609332338898)
+@@ -1,4 +1,6 @@
+ import asyncio
++import time
++
+ 
+ async def count():
+     print("One")
+@@ -8,9 +10,7 @@
+ async def main():
+     await asyncio.gather(count(), count(), count())
+ 
+-if __name__ == "__main__":
+-    import time
+-    s = time.perf_counter()
+-    asyncio.run(main())
+-    elapsed = time.perf_counter() - s
+-    print(f"{__file__} executed in {elapsed:0.2f} seconds.")
+\ No newline at end of file
++s = time.perf_counter()
++asyncio.run(main())
++elapsed = time.perf_counter() - s
++print(f"{__file__} executed in {elapsed:0.2f} seconds.")
+\ No newline at end of file
+diff --git a/database/model_env_variables.py b/database/model_env_variables.py
+new file mode 100644

@@ -1,0 +1,19 @@
+Index: database/base.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from sqlalchemy import create_engine\nfrom sqlalchemy.orm import scoped_session, sessionmaker\nfrom sqlalchemy.ext.declarative import declarative_base\ndb_name = 'entity_model_server_v_005_3'\n\n# Create database engine\n\nengine = create_engine(\"mysql+mysqlconnector://admin:Entity!123@localhost:3306/\" + db_name, \\\n                       pool_size=10, max_overflow=-1, pool_recycle=100, echo=True)\n# Engine connect\n\n# Declarative base model to create database tables and classes\nBase = declarative_base()\nBase.metadata.bind = engine  # Bind engine to metadata of the base class\n\n# Create database session object\ndb_session = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))\n\nBase.query = db_session.query_property()  # Used by graphql to execute queries\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/database/base.py b/database/base.py
+--- a/database/base.py	
++++ b/database/base.py	
+@@ -5,7 +5,7 @@
+ 
+ # Create database engine
+ 
+-engine = create_engine("mysql+mysqlconnector://admin:Entity!123@localhost:3306/" + db_name, \
++engine = create_engine("mysql+mysqlconnector://admin:Entity!123@localhost:12345/" + db_name, \
+                        pool_size=10, max_overflow=-1, pool_recycle=100, echo=True)
+ # Engine connect
+ 

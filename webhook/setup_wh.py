@@ -3,6 +3,8 @@ import requests
 import sys
 from api_maytapi import variables
 
+variables.load_env_variables(1)
+
 # Replace the values here.
 INSTANCE_URL = variables.INSTANCE_URL
 PRODUCT_ID = variables.PRODUCT_ID

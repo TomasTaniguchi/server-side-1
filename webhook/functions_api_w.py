@@ -2,6 +2,7 @@ import requests
 from api_maytapi import variables
 from functions  import random_code
 
+
 INSTANCE_URL = variables.INSTANCE_URL
 API_TOKEN = variables.API_TOKEN
 PRODUCT_ID = variables.PRODUCT_ID
