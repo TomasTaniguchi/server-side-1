@@ -12,6 +12,7 @@ def get_list_area_name(session, id_name_entity):
         area = i.name_area
         list_area.append(area)
         area = area + "\n"
+
         areas += area
     return areas, list_area
 

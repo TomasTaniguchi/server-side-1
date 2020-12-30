@@ -25,7 +25,6 @@ def payload_subscription():
         id = request.json['id']
         data = request.json
         PayloadSubTk.received_data(id, data)
-    print(PayloadSubTk.payload_tickets)
 
     return 'hola', 200
 
