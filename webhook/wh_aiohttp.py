@@ -29,7 +29,15 @@ def messenger(payload):
         .map(lambda i: wh_procces.message_received(payload)).subscribe()
 
 
+
+async def update(request):
+    payload = await request.json()
+
+    return web.Response()
+
 app = web.Application()
 app.add_routes([web.post('/webhook', webhook)])
+app.add_routes([web.post('/update', webhook)])
+
 
 web.run_app(app, port=8000)

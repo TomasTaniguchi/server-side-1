@@ -5,7 +5,7 @@ from webhook.functions_api_w import sent_payload
 from webhook.get_from_db import get_id_name_entity, get_ticket
 import sys, traceback
 from functools import lru_cache
-from eval_func_speed_copy import timerlog
+from eval_func_speed import runtime_log
 session = base.db_session()
 
 
@@ -20,7 +20,6 @@ def message_sent(payload):
     session.add(messages)
     return
 
-@timerlog
 def message_received(payload):
     print("message_received")
     message = payload['message']
@@ -35,7 +34,7 @@ def message_received(payload):
     messages = ModelMessages(**message)
     session.add(messages)
     session.commit()
-
+    session.close()
     return
 
 

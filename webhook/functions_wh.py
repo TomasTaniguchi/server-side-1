@@ -7,7 +7,7 @@ from webhook.functions_api_w import sent_message
 def check_area(session, msg_text, id_name_entity):
     msg_text += " " # para cuando la palabra esta al final de la cadena
     if "#" in msg_text:
-        max_char_length = 30
+        max_char_length = 18  # from model_area len(name_area) + 3 ("#"start, " "end, another space for the selection)
         char_start_position = msg_text.find("#")
         char_end_position = char_start_position + msg_text[char_start_position:char_start_position+max_char_length].find(" ")
         node3 = msg_text[char_start_position:char_end_position]
