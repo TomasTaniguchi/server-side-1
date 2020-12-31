@@ -36,8 +36,9 @@ def runtime_log(func):
         run_time = (end_time - start_time) * 1000  # 3
         currframe = inspect.currentframe()
         callframe = inspect.getouterframes(currframe, 2)
+        funcname=callframe[1][4][1].replace('\n', '')
         logging.info(
-            f"Runtime: {run_time:.4f} ms - {callframe[1][1]} - line: {callframe[1][2]} - {callframe[1][4][1]} ")  # (func.__name__!r) or (callframe[1][4][1])
+            f"Runtime: {run_time:.4f} ms - {callframe[1][1]} - line: {callframe[1][2]} - {funcname} ")  # (func.__name__!r) or (callframe[1][4][1])
         return value
 
     return wrapper_timer
