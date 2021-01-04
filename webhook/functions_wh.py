@@ -4,15 +4,20 @@ from webhook.get_from_db import get_list_area_name, get_default_msg, get_default
 from webhook.functions_api_w import sent_message
 
 
-def check_area(session, chain, id_name_entity):
-    for character in chain:
-        if character == "#":
-            areas = get_list_area_name(session, id_name_entity)[1]
-            for i in areas:
-                if chain.find(i) != -1:
-                    return i
-            else:
-                return False
+def check_area(session, msg_text, id_name_entity):
+    msg_text += " " # para cuando la palabra esta al final de la cadena
+    if "#" in msg_text:
+        max_char_length = 18  # from model_area len(name_area) + 3 ("#"start, " "end, another space for the selection)
+        char_start_position = msg_text.find("#")
+        char_end_position = char_start_position + msg_text[char_start_position:char_start_position+max_char_length].find(" ")
+        node3 = msg_text[char_start_position:char_end_position]
+        areas = get_list_area_name(session, id_name_entity)[1]
+        try:
+            index = areas.index(node3)
+            return areas[index]
+        except ValueError:
+            return False
+    else:
         return False
 
 

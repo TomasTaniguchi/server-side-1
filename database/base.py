@@ -6,7 +6,11 @@ db_name = 'entity_model_server_v_005_3'
 # Create database engine
 
 engine = create_engine("mysql+mysqlconnector://admin:Entity!123@localhost:12345/" + db_name, \
+<<<<<<< HEAD
                        pool_size=10, max_overflow=-1, pool_recycle=100, echo=True)
+=======
+                       pool_size=10, max_overflow=-1, pool_recycle=100, echo=False)
+>>>>>>> juan
 # Engine connect
 
 # Declarative base model to create database tables and classes

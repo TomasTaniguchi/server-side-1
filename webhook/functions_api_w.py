@@ -18,10 +18,11 @@ def sent_message(source, destination, message):
     message = random_code.white_space(message)
     url = INSTANCE_URL + "/" + PRODUCT_ID + "/" + source + "/sendMessage"
     payload = {"to_number": destination, "type": "text", "message": message}
-    response = requests.request("POST", url, headers=headers, json=payload)
-    return response
+    print(message)
+    #response = requests.request("POST", url, headers=headers, json=payload)
+    return #response
 
 def sent_payload(payload):
     url = "http://localhost:5000/payload_subscription"
-    response = requests.request("POST", url, json=payload)
-    return response
+    #response = requests.request("POST", url, json=payload)
+    return #response
